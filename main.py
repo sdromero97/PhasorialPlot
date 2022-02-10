@@ -71,7 +71,7 @@ if __name__ == '__main__':
         Ventana, _ = plot.subplots(ncols=num_dem_max, nrows=num_per_max*num_desp_max,
                                     figsize=(width + 2, height), constrained_layout=True,
                                     subplot_kw=dict(projection='polar'))
-        Ventana.suptitle('Subestación '+str(elemento), fontsize=22)
+        Ventana.suptitle('Tensión Fasorial en la Subestación '+str(elemento), fontsize=22)
         mng = plot.get_current_fig_manager()
         mng.window.state('zoomed')
     #plot.show()
@@ -114,8 +114,8 @@ if __name__ == '__main__':
                         ax[grafica].set_xlabel('Theta [deg]')
                         ax[grafica].set_ylabel('Tensión [p.u.]')
                         ax[grafica].legend(loc=(1.05, 0))
-                        ax[grafica].set_title('Año: ' + str(anio) + ' - Hidrología: ' + str(despacho) +
-                                              '\nDemanda: ' + str(demanda))
+                        ax[grafica].set_title('\nAño ' + str(anio) + ' - Hidrología ' + str(despacho) +
+                                              '\nDemanda ' + str(demanda))
                         grafica+=1
         if not save_manually:
             plot.savefig(ruta_pdf+'\\'+str(elemento)+'.pdf', dpi=300, bbox_inches='tight', facecolor='w')
