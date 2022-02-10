@@ -40,15 +40,6 @@ if __name__ == '__main__':
     matriz_base=workbook[['Caso_de_Estudio', 'Año_de_Estudio', 'Hidrología', 'Demanda','Caso_de_Análisis',
                           'Condición_Operativa','Elemento','m:u','m:phiu']]
 
-    # Se crea la carpeta que contendrá las gráficas en PDF
-    ruta_pdf = (ruta_archivos + r'\Graficas en PDF')
-    os.makedirs(ruta_pdf, exist_ok=True)
-    # plot.savefig('scatter2.png', dpi=300, bbox_inches='tight', facecolor='w')
-    # Se crea la carpeta que contendrá las gráficas en EMF
-    ruta_imag = (ruta_archivos + r'\Graficas en EMF')
-    os.makedirs(ruta_imag, exist_ok=True)
-
-
     # Se crean todas las figuras
     num_per_max=0
     for elemento in Elementos.unique()[0:2]:
@@ -118,6 +109,13 @@ if __name__ == '__main__':
                                               '\nDemanda ' + str(demanda))
                         grafica+=1
         if not save_manually:
+            # Se crea la carpeta que contendrá las gráficas en PDF
+            ruta_pdf = (ruta_archivos + r'\Graficas en PDF')
+            os.makedirs(ruta_pdf, exist_ok=True)
+            # Se crea la carpeta que contendrá las gráficas en EMF
+            ruta_imag = (ruta_archivos + r'\Graficas en EMF')
+            os.makedirs(ruta_imag, exist_ok=True)
+            #Se guardan las imágenes
             plot.savefig(ruta_pdf+'\\'+str(elemento)+'.pdf', dpi=300, bbox_inches='tight', facecolor='w')
             plot.savefig(ruta_imag+'\\'+str(elemento)+'.png', dpi=300, bbox_inches='tight', facecolor='w')
     if save_manually:
