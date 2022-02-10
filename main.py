@@ -21,6 +21,8 @@ if __name__ == '__main__':
     pos_label_radial=-90            # Posición en Grados
     # Guardar Gráficas Manualmente = 1; Guardar Gráficas de forma automática = 0
     save_manually=1
+    # Se cuenta con multiples alternativas = 1; Sólo una Alternativa = 0
+    multp_alternativas=0
     # Ruta en la cual se almacenan las carpetas con las imágenes de forma automática
     ruta_archivos = r'D:\Proyectos Perú\12. 3474-COE001 COYA-YANA\Wampacs\Resultados\Ensayo DPL'
     ############################################################################################
@@ -46,62 +48,75 @@ if __name__ == '__main__':
     ruta_imag = (ruta_archivos + r'\Graficas en EMF')
     os.makedirs(ruta_imag, exist_ok=True)
 
-    # Se inicia el ciclo que permite crear las gráficas
+
+    # Se crean todas las figuras
+    num_per_max=0
     for elemento in Elementos.unique()[0:2]:
-        # Se filtra la matriz con los resultados para cada elemento
+        num_desp_max = 0
+        num_dem_max = 0
         matriz_filtrada_1 = matriz_base.query("Elemento==@elemento")
-        # Se obtiene la cantidad de despachos y demandas encontrada luego de filtrar para crear el gráfico
-        num_dem=len(matriz_filtrada_1['Demanda'].unique())
-        num_desp=len(matriz_filtrada_1['Hidrología'].unique())
-        # Se crea la ventana del gráfico y se obtiene el arreglo de sub graficas "ax"
-        Ventana, ax = plot.subplots(ncols=num_dem,nrows=num_desp,figsize=(width+2,height), constrained_layout=True,
+        num_per=len(matriz_filtrada_1['Año_de_Estudio'].unique())
+        if num_per>num_per_max:
+            num_per_max=num_per
+        for anio in matriz_filtrada_1['Año_de_Estudio'].unique():
+            matriz_filtrada_2 = matriz_filtrada_1.query("Año_de_Estudio==@anio")
+            num_desp = len(matriz_filtrada_2['Hidrología'].unique())
+            if num_desp > num_desp_max:
+                num_desp_max = num_desp
+            for despacho in matriz_filtrada_2['Hidrología'].unique():
+                matriz_filtrada_3 = matriz_filtrada_2.query("Hidrología==@despacho")
+                num_dem = len(matriz_filtrada_3['Demanda'].unique())
+                if num_dem > num_dem_max:
+                    num_dem_max = num_dem
+        Ventana, _ = plot.subplots(ncols=num_dem_max, nrows=num_per_max*num_desp_max,
+                                    figsize=(width + 2, height), constrained_layout=True,
                                     subplot_kw=dict(projection='polar'))
-        # Se Agrega el Título a la Ventana, que corresponde al nombre del elemento
-        Ventana.suptitle(str(elemento), fontsize=22)
-        # Se obtiene el administrador de la figura y se agranda a pantalla completa
+        Ventana.suptitle('Subestación '+str(elemento), fontsize=22)
         mng = plot.get_current_fig_manager()
         mng.window.state('zoomed')
-        #Se continua con la creación de gráficas
+    #plot.show()
+
+    # Se inicia el ciclo que permite crear los fasores de las gráficas
+    for elemento, index_fig in zip(Elementos.unique()[0:2], plot.get_fignums()):
+        fig=plot.figure(index_fig)
+        ax=fig.get_axes()
+        matriz_filtrada_1 = matriz_base.query("Elemento==@elemento")
+        num_per = len(matriz_filtrada_1['Año_de_Estudio'].unique())
+        grafica=0
         for anio in matriz_filtrada_1['Año_de_Estudio'].unique():
-            # Se filtra la matriz con los resultados para cada Año
             matriz_filtrada_2 = matriz_filtrada_1.query("Año_de_Estudio==@anio")
-            # Se continua clasificando los datos a graficar y nos paramos en el subplot correspondiente con row
-            for despacho, row in zip(matriz_filtrada_2['Hidrología'].unique(), range(num_desp)):
-                # Se filtra la matriz con los resultados para cada despacho
+            for despacho in matriz_filtrada_2['Hidrología'].unique():
                 matriz_filtrada_3 = matriz_filtrada_2.query("Hidrología==@despacho")
-                # Se continua clasificando los datos a graficar y nos paramos en el subplot correspondiente con col
-                for demanda, col in zip(matriz_filtrada_3['Demanda'].unique(), range(num_dem)):
-                    # Se filtra la matriz con los resultados para cada demanda
+                num_dem = len(matriz_filtrada_3['Demanda'].unique())
+                for demanda in matriz_filtrada_3['Demanda'].unique():
                     matriz_filtrada_4 = matriz_filtrada_3.query("Demanda==@demanda")
-                    # Se continua clasificando los datos a graficar
                     for alternativa in matriz_filtrada_4['Caso_de_Análisis'].unique():
-                        # Se filtra la matriz con los resultados para cada caso de análisis
                         matriz_filtrada_5 = matriz_filtrada_4.query("Caso_de_Análisis==@alternativa")
-                        # Se establece una semilla para que ramdon arroje siempre los mismos valores pseudoaleatorios
-                        np.random.seed(255)
+                        np.random.seed(1315425)
                         for condicion in matriz_filtrada_5['Condición_Operativa'].unique():
-                            # Se obtiene un vector con valores aleatorios para definir un color para el fasor
                             rgb = np.random.rand(3,)
-                            # Se filtra la matriz con los resultados para cada condición operativa
                             matriz_filtrada_6 = matriz_filtrada_5.query("Condición_Operativa==@condicion")
-                            # Se crea el fasor en la gráfica, definiendole el color y la etiqueta de la leyenda
-                            ax[row,col].bar(np.radians(matriz_filtrada_6['m:phiu']), matriz_filtrada_6['m:u'],
-                                            width=.015, bottom=0.0, color=rgb, label=condicion)
-                        # Se ajustan los limites de los ejes polares
-                        ax[row,col].set_xlim(np.radians(lim_min_theta),np.radians(lim_max_theta))
-                        ax[row,col].set_ylim(lim_min_mag,lim_max_mag)
-                        # Se gira las etiquetas del eje radial para que queden verticales
-                        ax[row,col].set_rlabel_position(pos_label_radial)
-                        # Se establece la separación radial de los grados en 10 deg
-                        ax[row, col].set_xticks(np.arange(np.radians(lim_min_theta), np.radians(lim_max_theta+intervalo_theta), np.radians(intervalo_theta)))
-                        # Se ajustan las etiquetas de los ejes
-                        ax[row, col].set_xlabel('Theta [deg]', rotation=0)
-                        ax[row, col].set_ylabel('Tensión [p.u.]')
-                        # Se crea la leyenda de la gráfica y se posiciona en la esquina inferior derecha
-                        ax[row,col].legend(loc=(1.1, 0))
-                        # Se asigna el nombre de la sub grafica en la figura
-                        ax[row,col].set_title('Año: '+str(anio)+' - Hidrología: '+str(despacho)+
-                                              '\nDemanda: '+str(demanda)+' - Caso: '+str(alternativa))
+                            # Se crea el fasor en la gráfica a partir de los datos filtrados
+                            if multp_alternativas:
+                                ax[grafica].bar(np.radians(matriz_filtrada_6['m:phiu']), matriz_filtrada_6['m:u'],
+                                                width=.015, bottom=0.0, color=rgb,
+                                                label=str(alternativa)+' - '+str(condicion))
+                            else:
+                                ax[grafica].bar(np.radians(matriz_filtrada_6['m:phiu']), matriz_filtrada_6['m:u'],
+                                                width=.015, bottom=0.0, color=rgb, label=condicion)
+                        # Se Realizan ajustes al gráfico
+                        ax[grafica].set_xlim(np.radians(lim_min_theta), np.radians(lim_max_theta))
+                        ax[grafica].set_ylim(lim_min_mag, lim_max_mag)
+                        ax[grafica].set_rlabel_position(pos_label_radial)
+                        ax[grafica].set_xticks(np.arange(np.radians(lim_min_theta),
+                                                         np.radians(lim_max_theta + intervalo_theta),
+                                                         np.radians(intervalo_theta)))
+                        ax[grafica].set_xlabel('Theta [deg]')
+                        ax[grafica].set_ylabel('Tensión [p.u.]')
+                        ax[grafica].legend(loc=(1.05, 0))
+                        ax[grafica].set_title('Año: ' + str(anio) + ' - Hidrología: ' + str(despacho) +
+                                              '\nDemanda: ' + str(demanda))
+                        grafica+=1
         if not save_manually:
             plot.savefig(ruta_pdf+'\\'+str(elemento)+'.pdf', dpi=300, bbox_inches='tight', facecolor='w')
             plot.savefig(ruta_imag+'\\'+str(elemento)+'.png', dpi=300, bbox_inches='tight', facecolor='w')
